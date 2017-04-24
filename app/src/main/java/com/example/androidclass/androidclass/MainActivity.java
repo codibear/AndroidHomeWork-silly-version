@@ -1,4 +1,4 @@
-﻿package com.example.androidclass.androidclass;
+package com.example.androidclass.androidclass;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -142,11 +142,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             intentS3.putExtra("name",name);
             intentS3.putExtra("passwd",passwd);
             startActivity(intentS3);
-        }else if(name.equals(sqlname)&&passwd.equals(sqlpasswd) ) {
+        }else if(name.equals(nameSecRestore)&&passwd.equals(passwdSecRestore) ) {
             Intent intentS4 = new Intent(MainActivity.this,SqliteLogin.class);
             // 直接用putExtra调试
-            intentS4.putExtra("name", sqlname);
-            intentS4.putExtra("passwd", sqlpasswd);
+            intentS4.putExtra("name", name);
+            intentS4.putExtra("passwd", passwd);
             startActivity(intentS4);}
          else {
                 Toast.makeText(MainActivity.this, "您的帐号密码有误\n请查正后再登录", Toast.LENGTH_SHORT).show();
