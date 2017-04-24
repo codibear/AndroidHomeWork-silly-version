@@ -111,15 +111,12 @@
                 android:layout_gravity="center_horizontal"
                 android:text="@string/button" />
         </LinearLayout>
-
         <CheckBox
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:id="@+id/remember"
+            android:layout_width="wrap_content"
+            android:id="@+id/chbsp"
             android:layout_gravity="center"
             android:layout_height="wrap_content"
-            android:text="记住密码"/>
-
+            android:text="保存用户名" />
         <LinearLayout
             android:layout_width="0dp"
             android:layout_weight="1"

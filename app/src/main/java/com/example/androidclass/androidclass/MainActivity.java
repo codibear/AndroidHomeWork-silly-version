@@ -1,57 +1,38 @@
 package com.example.androidclass.androidclass;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.RadioButton;
-import android.widget.TextView;
 import android.widget.Toast;
-
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
-    private SharedPreferences sharedPreferences;
-    private SharedPreferences.Editor editorMain;
+    private RequestForHttp requestForHttp;
+    private ParseJson parseJson;
     private Button register;
     private Button signup;
     private EditText editName;
     private EditText editPasswd;
     private RadioButton female,male;
-    private CheckBox chb1,chb2,chb3,chb4,remember;
-
-    private List<Account> list;
-    private AccountDuo duo;
-    private MyAdapter adapter;
-    // que Adapter
-    private ListView accountLV;
-    static String sqlname;
-    static String sqlpasswd;
+    private CheckBox chb1,chb2,chb3,chb4,chbsp;
+    private SharedPreferences pref1;
+    private SharedPreferences.Editor editor1;
+    public  final String url = "http://127.0.0.1:8080/accountandpasswd";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        duo = new AccountDuo(this);
-        list = duo.queryAll();
-        adapter = new MyAdapter();
-        accountLV.setAdapter(adapter);
-        init();
-        updateCheckbox();
-        getData();
-        isRemember();
-    }
-    //初始化界面
-    public void init(){
+
+
+
         register = (Button)findViewById(R.id.regisiter);
         signup = (Button)findViewById(R.id.signup) ;
         editName = (EditText)findViewById(R.id.edit_name);
@@ -66,35 +47,56 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         chb2 = (CheckBox)findViewById(R.id.chb2) ;
         chb3 = (CheckBox)findViewById(R.id.chb3) ;
         chb4 = (CheckBox)findViewById(R.id.chb4) ;
-        remember = (CheckBox)findViewById(R.id.remember) ;
+        chbsp = (CheckBox)findViewById(R.id.chbsp);
 
-        accountLV = (ListView) findViewById(R.id.sqliteList);
-        accountLV.setOnItemClickListener(new MyOnItemClickListenr());
+        requestForHttp = new RequestForHttp();
 
+        parseJson = new ParseJson();
+
+        pref1 = getSharedPreferences("remember_passwd",MODE_PRIVATE);
+
+        boolean isRemember = pref1.getBoolean("remember",false);
+        chbsp.setChecked(isRemember);
+       // editor1 = pref1.edit();
+        /*if(isRemember){
+            String account = pref1.getString("account","");
+            String passwd = pref1.getString("passwd","");
+            editName.setText(account);
+            editPasswd.setText(passwd);
+
+        }*/
+
+
+           /* editor1.putString("account",name);
+            editor1.putString("passwd",passwd);*/
+        //editor1.putBoolean("remember",true);
+new Thread(new Runnable() {
+    @Override
+    public void run() {
+
+        String gainName =pref1.getString("account","");
+        String gainPasswd =pref1.getString("passwd","");
+        editName.setText(gainName);
+        editPasswd.setText(gainPasswd);
 
     }
+}).start();
 
-    private class MyOnItemClickListenr implements AdapterView.OnItemClickListener{
-        public void onItemClick(AdapterView<?>parent,View view,int position,long id){
-            Account a = (Account)parent.getItemAtPosition(position);
-            Toast.makeText(getApplicationContext(),a.toString(),Toast.LENGTH_LONG).show();
-        }
-    }
-    //更新界面的记忆checkbox状态
-    public void updateCheckbox(){
-        SharedPreferences mainRemembersp =  getSharedPreferences("main_restore",MODE_PRIVATE);
-        boolean rememberStatus = mainRemembersp.getBoolean("remember",false);
-        remember.setChecked(rememberStatus);
-    }
-//记住“记住密码”CheckBox的状态
-    public void isRemember(){
-        SharedPreferences mainRemembersp =  getSharedPreferences("main_restore",MODE_PRIVATE);
-        SharedPreferences.Editor editor = mainRemembersp.edit();
-        if(remember.isChecked()){
-            editor.putBoolean("remember",true);
-            getSecRestore();
-        }else {editor.clear();}
-        editor.apply();
+
+
+        /*String name = editName.getText().toString().trim();
+        String passwd = editPasswd.getText().toString().trim();
+        editor1 = pref1.edit();
+        if(chbsp.isChecked()){
+            editor1.putBoolean("remember",true);
+            editor1.putString("account",name);
+            editor1.putString("passwd",passwd);
+        }else{editor1.clear();}
+        editor1.apply();
+*/
+
+        getData();
+
     }
     @Override
     public void onClick(View v) {
@@ -102,25 +104,36 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             case R.id.regisiter:
                 sendDataSecond();
-                //requsetData();
                 break;
             case R.id.signup:
                  check();
-                isRemember();
                 break;
             default:
                 break;
         }
     }
-    //判断帐号密码是否与已有的匹配并登录
+    //check passwd & name
     public void check(){
 
         String name = editName.getText().toString().trim();
         String passwd = editPasswd.getText().toString().trim();
+        //想服务器上传送帐号密码，用来验证
+        String data=requestForHttp.getData(url,name,passwd);
+        String jsonData = parseJson.parseJSONWithGet(data);
+        // 获取存储的账号密码信息
+        editor1 = pref1.edit();
+        if(chbsp.isChecked()){
+            editor1.putBoolean("remember",true);
+            editor1.putString("account",name);
+            editor1.putString("passwd",passwd);
+        }else{editor1.clear(); editor1.putBoolean("remember",false);}
+        editor1.apply();
 
-        SharedPreferences preferences = getSharedPreferences("sec_restore",MODE_PRIVATE);
-        String nameSecRestore= preferences.getString("sec_name","");
-        String passwdSecRestore= preferences.getString("sec_name","");
+        SharedPreferences sp = getApplicationContext().getSharedPreferences("data", Context.MODE_PRIVATE);
+        String spName = sp.getString("account",null);
+        String spPasswd = sp.getString("passwd",null);
+        String spGander = sp.getString("gander",null);
+
 
         if(name.equals("zhangzhixiong")&&passwd.equals("4140206231") ){
             Intent intentS = new Intent(MainActivity.this,SignUp.class);
@@ -142,16 +155,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             intentS3.putExtra("name",name);
             intentS3.putExtra("passwd",passwd);
             startActivity(intentS3);
-        }else if(name.equals(nameSecRestore)&&passwd.equals(passwdSecRestore) ) {
-            Intent intentS4 = new Intent(MainActivity.this,SqliteLogin.class);
+        }else if(name.equals(spName)&&passwd.equals(spPasswd)){
+
+            Intent intentS4 = new Intent(MainActivity.this,SuccessActivity.class);
             // 直接用putExtra调试
-            intentS4.putExtra("name", name);
-            intentS4.putExtra("passwd", passwd);
-            startActivity(intentS4);}
-         else {
-                Toast.makeText(MainActivity.this, "您的帐号密码有误\n请查正后再登录", Toast.LENGTH_SHORT).show();
-            }
+            startActivity(intentS4);
+        }else if(jsonData != null && jsonData.length()!=0){
+            Intent intentS4 = new Intent(MainActivity.this,SuccessActivity.class);
+            // 直接用putExtra调试
+            startActivity(intentS4);
         }
+        else {
+            Toast.makeText(MainActivity.this,"登录失败!",Toast.LENGTH_SHORT).show();
+        }
+    }
     //向SecondActivity发送数据
     public void sendDataSecond(){
         String name = editName.getText().toString().trim();
@@ -183,7 +200,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         intent.putExtra("favor",favor);
         startActivity(intent);
     }
-
 //用向下一个活动传递数据方法
     public void getData(){
         Intent intent = getIntent();
@@ -191,53 +207,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         String returnPasswd = intent.getStringExtra("changePasswd");
         editName.setText(returnName);
         editPasswd.setText(returnPasswd);
-    }
-    //获取注册成功界面所存储的帐号密码
-    public void getSecRestore(){
-        SharedPreferences preferences = getSharedPreferences("sec_restore",MODE_PRIVATE);
-        String nameSecRestore= preferences.getString("sec_name","");
-        String passwdSecRestore= preferences.getString("sec_name","");
-        editName.setText(nameSecRestore);
-        editPasswd.setText(passwdSecRestore);
-    }
-    public void add(View v) {
-
-        Account a = new Account(sqlname, sqlpasswd); //此处需要特定的构造函数,woyingjing gai le
-        duo.insert(a);
-        list.add(a);
-        adapter.notifyDataSetChanged();
-        accountLV.setSelection(accountLV.getCount() - 1);
-        editName.setText("");
-        editPasswd.setText("");
-    }
-    public class MyAdapter extends BaseAdapter {
-        @Override
-        public int getCount() {
-            return list.size();
-        }
-
-        @Override
-        public Object getItem(int position) {
-            return list.get(position);
-        }
-
-        @Override
-        public long getItemId(int position) {
-            return position;
-        }
-
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            View item = convertView != null ? convertView : View.inflate(getApplicationContext(), R.layout.activity_item, null);
-            TextView idTV = (TextView)findViewById(R.id.itemId);
-            TextView nameTV = (TextView)findViewById(R.id.itemName);
-            TextView passwdTV = (TextView)findViewById(R.id.itemPasswd);
-            final Account a =list.get(position);
-            idTV.setText(a.getId()+"");
-            nameTV.setText(a.getName()+"");
-            passwdTV.setText(a.getPasswd()+"");
-            return item;
-        }
     }
 
 }
